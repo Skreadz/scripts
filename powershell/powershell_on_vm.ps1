@@ -17,7 +17,7 @@ function menu () #### Fonction Menu
     Write-Host "5 : Role DHCP + Etendue"
     Write-Host "6 : Installe AD en réplication + 3DISK (sysvol,logs,bdd)"
     Write-Host "7 : Installe Rôle serveur de fichier)"
-    Write-Host "8 : Installe DFS main server)"
+    Write-Host "8 : Installe DFS main server (2ads répliqué nécessaire + 2serveurs de fichiers dans le)"
     Write-Host "Q : Quitter"
     $choix = Read-Host "votre choix "
     switch ($choix) {
@@ -101,6 +101,8 @@ function dns {              #### Fonction désactiver écoute dns IPV6 + ajout d
 
     Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily IPv6 | Set-DnsClientServerAddress -ResetServerAddresses
     Set-DnsClientServerAddress -InterfaceIndex $index -ServerAddresses $dns
+    nslookup
+    pause
 }
 
 function zone_inverse {     #### Fonction création zone inversée
@@ -154,7 +156,7 @@ function ad_join {
     $domain = Read-Host "Saisir le nom de domaine"
     #$netbios = Read-Host "Saisir le nom NETBIOS"
     $fqdn = Read-Host "Saisir FQDN du serveur principale"
-    $admindomaine = "Administrateur@"+$namedomain
+    $admindomaine = "$domain\administrateur"
 
     Import-module ADDSDeployment            #### Ajout AD dans forêt existante
     $ForestConfiguration = @{
