@@ -16,8 +16,9 @@ function menu () #### Fonction Menu
     Write-Host "4 : Création zone inversée"
     Write-Host "5 : Role DHCP + Etendue"
     Write-Host "6 : Installe AD en réplication + 3DISK (sysvol,logs,bdd)"
-    Write-Host "7 : Installe Rôle serveur de fichier)"
+    Write-Host "7 : Installe Rôle serveur de fichier"
     Write-Host "8 : Installe DFS main server (2ads répliqué nécessaire + 2serveurs de fichiers dans le)"
+    Write-Host "9 : Réplication de fichiers"
     Write-Host "Q : Quitter"
     $choix = Read-Host "votre choix "
     switch ($choix) {
@@ -29,6 +30,7 @@ function menu () #### Fonction Menu
         6 {ad_join;pause;menu}
         7 {server_fichier;pause;menu}
         8 {dfs_main_server;pause;menu}
+        9 {replication;pause;menu}
         Q {exit}
         Default {menu}   
 }
@@ -73,6 +75,8 @@ function ad {
     -NoRebootOnCompletion:$false `
     -SysvolPath "S:\SYSVOL" `
     -Force:$true
+
+    Restart-Computer
 }
 
 function ip {           #### Fonction changement ip address + rename computer
@@ -92,6 +96,7 @@ function ip {           #### Fonction changement ip address + rename computer
     Get-NetIPConfiguration
 
     Rename-Computer -NewName $name
+    Restart-Computer
 }
 function dns {              #### Fonction désactiver écoute dns IPV6 + ajout du serveur dns
 
@@ -138,6 +143,10 @@ function ad_join {
     $diskbdd = Read-Host "Selectionner un disque pour la bdd"
     $disksysvol = Read-Host "Selectionner un disque pour sysvol"
     $disklogs = Read-Host "Selectionner un disque pour les logs"
+    $domain = Read-Host "Saisir le nom de domaine"
+    #$netbios = Read-Host "Saisir le nom NETBIOS"
+    $fqdn = Read-Host "Saisir FQDN du serveur principale"
+    $admindomaine = "$domain\administrateur"
 
     Initialize-Disk -Number $diskbdd                                                        #### DISK SYSVOL LOGS DATA
     New-Partition -DiskNumber $diskbdd -DriveLetter B -Size 4GB
@@ -152,11 +161,11 @@ function ad_join {
     Format-Volume -DriveLetter L -FileSystem NTFS -Confirm:$false -NewFileSystemLabel LOGS
 
     Add-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools -IncludeAllSubFeature #### AJOUT ROLE AD
-
-    $domain = Read-Host "Saisir le nom de domaine"
-    #$netbios = Read-Host "Saisir le nom NETBIOS"
-    $fqdn = Read-Host "Saisir FQDN du serveur principale"
-    $admindomaine = "$domain\administrateur"
+    Get-WindowsFeature FS-DFS* | Install-WindowsFeature -IncludeManagementTools               #### AJOUR ROLE SERVEUR DE FICHIER
+    Install-WindowsFeature FS-BranchCache -IncludeManagementTools
+    
+    New-Item -Path "C:\partage" -itemType Directory
+    New-SmbShare -Name "partage" -Path "C:\partage"
 
     Import-module ADDSDeployment            #### Ajout AD dans forêt existante
     $ForestConfiguration = @{
@@ -194,15 +203,15 @@ function server_fichier {
 }
     function role {             #### Fonction installe rôles serveur de fichier + réplication + ajout au domaine
         $domain = Read-host "Saisir nom de domaine"
-        $admindomain = "Administrateur@"+$domain
+        $admindomain = "Administrateur@$domain"
 
         Install-WindowsFeature FS-BranchCache -IncludeManagementTools
         Install-WindowsFeature FS-DFS-Replication
         Add-Computer -DomainName $domain  -Credential (Get-Credential $admindomain) -Restart
     }
-    function folder {           #### Fonction création smbshare partage$ + crétation 3 dossier COMMUN,PERSO,SERVICES
+    function folder {           #### Fonction création smbshare partage$ + création 3 dossier COMMUN,PERSO,SERVICES
         
-        New-Item -Path C:\partage
+        New-Item -Path C:\partage -itemType Directory
         New-SmbShare -Name "partage$" -Path "C:\partage"
         New-Item -Path C:\partage\COMMUN,C:\partage\PERSO,C:\partage\SERVICES -ItemType Directory
     }
@@ -215,6 +224,20 @@ function dfs_main_server {
     $sf1 = Read-Host "Saisir Serveur de fichier 1"
     $sf2 = Read-Host "Saisir Serveur de fichier 2"
     Get-WindowsFeature FS-DFS* | Install-WindowsFeature -IncludeManagementTools             #### Rôle espace de noms et réplication
+    Install-WindowsFeature FS-BranchCache -IncludeManagementTools
+
+    New-Item -Path "C:\partage" -itemType Directory
+    New-SmbShare -Name "partage" -Path "C:\partage"
+
+    Enter-PSSession $ad2                                                                    #### Connexion powershell sur ad2
+
+    Get-WindowsFeature FS-DFS* | Install-WindowsFeature -IncludeManagementTools
+    Install-WindowsFeature FS-BranchCache -IncludeManagementTools
+    
+    New-Item -Path "C:\partage" -itemType Directory
+    New-SmbShare -Name "partage" -Path "C:\partage"
+
+    Exit-PSSession
 
     New-DfsnRoot -Path "\\$domain\partage" -Type DomainV2 -TargetPath "\\$ad1\partage"      #### Création espace de nom sur serveur ad1 et ad2
     New-DfsnRoot -Path "\\$domain\partage" -Type DomainV2 -TargetPath "\\$ad2\partage"
@@ -225,5 +248,33 @@ function dfs_main_server {
     New-DfsnFolderTarget -Path "\\$domain\partage\PERSO" -TargetPath "\\$sf2\partage$\PERSO"
     New-DfsnFolder -Path "\\$domain\partage\SERVICES" -TargetPath "\\$sf1\partage$\SERVICES" -EnableTargetFailback $true -Description 'Folder for legacy software.'
     New-DfsnFolderTarget -Path "\$domain\partage\SERVICES" -TargetPath "\\$sf2\partage$\SERVICES"
+}
+
+function replication {          #### Fonction réplication de fichiers
+    $serv1 = Read-host "Saisir le nom DNS du premier serveur de fichier"
+    $lettre1 = Read-host "Saisir la lettre du lecteur du premier serveur de fichier"
+    $serv2 = Read-host "Saisir le nom DNS du deuxieme serveur de fichier"
+    $lettre2 = Read-host "Saisir la lettre du lecteur du deuxieme serveur de fichier"
+
+    New-DfsReplicationGroup -GroupName "COMMUN"
+    Add-DfsrMember -GroupName "COMMUN" -ComputerName $serv1,$serv2
+    Add-DfsrConnection -GroupName "COMMUN" -SourceComputerName $serv1 -DestinationComputerName $serv2
+    New-DfsReplicatedFolder -GroupName "COMMUN" -FolderName "COMMUN"
+    Set-DfsrMembership -GroupName "COMMUN" -FolderName "COMMUN" -ContentPath $lettre1":\COMMUN" -ComputerName $serv1 -PrimaryMember $True -Force
+    Set-DfsrMembership -GroupName "COMMUN" -FolderName "COMMUN" -ContentPath $lettre2":\COMMUN" -ComputerName $serv2 -Force
+
+    New-DfsReplicationGroup -GroupName "PERSO"
+    Add-DfsrMember -GroupName "PERSO" -ComputerName $serv1,$serv2
+    Add-DfsrConnection -GroupName "PERSO" -SourceComputerName $serv1 -DestinationComputerName $serv2
+    New-DfsReplicatedFolder -GroupName "PERSO" -FolderName "PERSO"
+    Set-DfsrMembership -GroupName "PERSO" -FolderName "PERSO" -ContentPath $lettre1":\PERSO" -ComputerName $serv1 -PrimaryMember $True -Force
+    Set-DfsrMembership -GroupName "PERSO" -FolderName "PERSO" -ContentPath $lettre2":\PERSO" -ComputerName $serv2 -Force
+
+    New-DfsReplicationGroup -GroupName "SERVICES"
+    Add-DfsrMember -GroupName "SERVICES" -ComputerName $serv1,$serv2
+    Add-DfsrConnection -GroupName "SERVICES" -SourceComputerName $serv1 -DestinationComputerName $serv2
+    New-DfsReplicatedFolder -GroupName "SERVICES" -FolderName "SERVICES"
+    Set-DfsrMembership -GroupName "SERVICES" -FolderName "SERVICES" -ContentPath $lettre1":\SERVICES" -ComputerName $serv1 -PrimaryMember $True -Force
+    Set-DfsrMembership -GroupName "SERVICES" -FolderName "SERVICES" -ContentPath $lettre2":\SERVICES" -ComputerName $serv2 -Force
 }
 menu
