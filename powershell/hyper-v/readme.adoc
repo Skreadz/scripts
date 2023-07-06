@@ -1,0 +1,23 @@
+:doctype: book
+= Script Hyper-V
+:source-highlighter: highlight.js
+:sectums:
+:toc: left
+:toc-title: Système et réseau Mémo
+:toclevels: 4
+
+Ce script permet de créer et de détruire des vms rapidement sur Hyper-V.
+
+== Prérequis
+* Préparation d'un sysprep windows server core et gui
+* Peu importe la version des windows server
+* Mettre les deux vhdx dans un dossier à la racine C:\sysprep
+* Créer un dossier vm à la racine C:\vm
+* Créer un vswitch dans hyper-v de type privé (ex: LAN)
+
+== Script
+
+* Menu1 = Création VM Windows Core
+* Menu2 = Création VM Windows GUI
+* Menu3 = Création et ajout 3 disk supplémentaire à la VM choisit de 4GB et de type SCSI.
+* Menu4 = Suppréssion de la vm choisit
