@@ -48,3 +48,6 @@ ForEach-Object ($line in $liste) {
         Write-Host "le dossier existe deja"
     }
 }
+
+
+New-ADUser -Name "test" -Enable $true -ChangePasswordAtLogon $true -Path "OU=VENTE,OU=UTILISATEURS,OU=SQLI,DC=zouz,DC=local" -Verbose -AccountPassword (convertto-securestring "Azerty1+" -asplaintext -force)

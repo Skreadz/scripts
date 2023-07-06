@@ -13,12 +13,14 @@ function menu () #### Fonction Menu
     Write-Host "1 : Création OU principale"
     Write-Host "2 : Création groupe"
     Write-Host "3 : Création dossier partages"
+    Write-Host "4 : Création des utilisateurs"
     Write-Host "Q : Quitter"
     $choix = Read-Host "votre choix "
     switch ($choix) {
         1 {ou_principale;pause;menu}
         2 {groupe;pause;menu}
         3 {dossier;pause;menu}
+        4 {user;pause;menu}
         Q {exit}
         Default {menu}   
 }
@@ -85,7 +87,21 @@ function dossier () {           #### Fonction pour créer les dossiers perso use
     }
 }
 
-function user {
-   
+function user {         #### Fonction pour créer utilisateur
+
+    $cheminbase = (Get-Addomain).distinguishedname
+    $ou_principale = Read-Host "Saisir OU principale"
+    $cheminouprincipale = "OU=$ou_principale,$cheminbase"
+    $cheminuser = "OU=UTILISATEURS,"+$cheminouprincipale
+    $csv = import-csv -path "C:\Users\Administrateur\Documents\user.csv" -Delimiter ";" -Encoding UTF8
+
+    foreach ($line in $csv) {
+    $group = $line.ou.toUpper()
+    $cheminuser = "OU="+$group+",OU=UTILISATEURS,"+$cheminouprincipale
+    #$prenom = $line.prenom.toLower()
+    $nom = $line.nom.toLower()
+
+    New-ADUser -Name $nom -Enable $true -ChangePasswordAtLogon $true -Path $cheminuser -Verbose -AccountPassword (convertto-securestring "Azerty1+" -asplaintext -force)
+    }
 }
 menu
