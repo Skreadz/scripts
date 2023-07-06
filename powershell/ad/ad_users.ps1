@@ -24,7 +24,7 @@ function menu () #### Fonction Menu
 }
 }
 
-function ou_principale () {
+function ou_principale () {         #### Fonction pour créer OU principale ex: SQLI + IMPRIMANTES,GROUPES,UTILISATEURS,ORDINATEURS,SERVEURS
     $cheminbase = (Get-Addomain).distinguishedname
     $ou_principale = Read-Host "Saisir OU principale"
 
@@ -44,7 +44,7 @@ function ou_principale () {
     New-ADOrganizationalUnit -Name $ou_user -Path $cheminuser -Verbose -ProtectedFromAccidentalDeletion:$false     
     }
 }
-function groupe () {
+function groupe () {        #### Fonction pour créer les groupes GG,GU,GDL en fonction des services du CSV
 
     $cheminbase = (Get-Addomain).distinguishedname
     $ou_principale = Read-Host "Saisir OU principale"
@@ -52,7 +52,7 @@ function groupe () {
     $chemingroupe = "OU=GROUPES,"+$cheminouprincipale
     $csv = import-csv -path "C:\Users\Administrateur\Documents\user.csv" -Delimiter ";" -Encoding UTF8
     foreach ($line in $csv) {
-        $group = $line.group.toUpper()
+        $group = $line.group.toUpper()      #### Récupère la section group du CSV en plus de l'écrire en majuscules
         $GG="GG_"+$group
         $GU="GU_"+$group
         $GDL="GDL_"+$group+"_RW"
@@ -62,23 +62,30 @@ function groupe () {
     New-ADGroup -GroupCategory Security -GroupScope Global -Name $GU -Path $chemingroupe -Verbose
                  
     New-ADGroup -GroupCategory Security -GroupScope Global -Name $GDL -Path $chemingroupe -Verbose
+
+    Add-ADGroupMember -Identity $GU -Members  $GG -Verbose
+    Add-ADGroupMember -Identity $GDL -Members  $GU -Verbose
            
     }
 }
 
-function dossier () {
-    $cheminservices = "\\SRV-SF1\partage$\SERVICES\"
-    $cheminperso = "\\SRV-SF1\partage$\PERSO\"
+function dossier () {           #### Fonction pour créer les dossiers perso users + dossier de services sur le serveur \\SRV-SF1\partage
+    $cheminservices = "\\SRV-SF1\partage\SERVICES\"
+    $cheminperso = "\\SRV-SF1\partage\PERSO\"
     $csv = import-csv -path "C:\Users\Administrateur\Documents\user.csv" -Delimiter ";" -Encoding UTF8
     foreach ($line in $csv) {
         $group = $line.ou.toUpper()
         $sam = $line.prenom.toLower()+"."+$line.nom.toLower()
         $chemintest = $cheminservices+$group
-        #$existe = Test-Path -Path $chemintest
-        #if (!$existe) {
+        $existe = Test-Path -Path $chemintest
+        if (!$existe) {     #### Test si le chemin existe sinon il ne lance pas la commande
             New-Item -ItemType Directory -Name $group -Path $cheminservices -Verbose
-            #}
+            }
         New-Item -ItemType Directory -Name $sam -Path $cheminperso -Verbose
     }
+}
+
+function user {
+   
 }
 menu
