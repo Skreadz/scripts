@@ -15,5 +15,23 @@ Ce script permet d'automatiser le déploiement d'un certains nombre de services 
 
 == Script
 
+Suivre l'ordre pour l'installation d'une infra Microsoft.
+
 === Préparation du serveur AD principale
-* Menu1 = Permet d'installer
+* Menu1 = Configuration IP + Rename serveur
+* Menu2 = Permet d'installer le rôle AD + Création nouvelle foret + Initialisation des 3 disques 4GB sysvol,logs,bdd
+* Menu3 = nslookup propre
+* Menu4 = Création zone inversée
+* Menu5 = Rôle DHCP + étendue
+
+=== Préparation AD secondaire
+* Menu1 = Configuration IP + Rename serveur
+* Menu6 = Ajout serveur AD dans le domaine existant + Initialisation des 3 disques 4GB sysvol,logs,bdd + nouveau smb share c:\partage
+
+=== Préparation à faire sur les 2 serveurs de fichiers
+* Menu7 to Menu1 = Installe rôle services de fichiers + restart
+* Menu7 to Menu2 = Création du dossier partagé C:\partage + COMMUN,PERSO,SERVICES
+
+=== DFS  et Réplication sur AD principale
+* Menu8 = Création espace de nom + target vers COMMUN,PERSO,SERVICES
+* Menu9 = Réplication des dossiers COMMUN,PERSO,SERVICES sur les 2 serveurs de fichiers

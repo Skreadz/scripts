@@ -10,20 +10,20 @@ function menu () #### Fonction Menu
     Clear-Host
     Write-Host "Menu Script"
 
-    Write-Host "1 : Install ADDS main server + 3DISK (sysvol,logs,bdd)"
-    Write-Host "2 : Config IP + Nom Serveur"
+    Write-Host "1 : Config IP + Nom Serveur"
+    Write-Host "2 : Install ADDS main server + 3DISK (sysvol,logs,bdd)"
     Write-Host "3 : Config DNS Propre"
     Write-Host "4 : Création zone inversée"
     Write-Host "5 : Role DHCP + Etendue"
     Write-Host "6 : Installe AD en réplication + 3DISK (sysvol,logs,bdd)"
     Write-Host "7 : Installe Rôle serveur de fichier"
     Write-Host "8 : Installe DFS main server (2ads répliqué nécessaire + 2serveurs de fichiers dans le domaine)"
-    Write-Host "9 : Réplication de fichiers"
+    Write-Host "9 : Réplication de fichiers sur AD principale"
     Write-Host "Q : Quitter"
     $choix = Read-Host "votre choix "
     switch ($choix) {
-        1 {ad;pause;menu} #### Fonction ad >> fonction pause >> menu
-        2 {ip;pause;menu}
+        1 {ip;pause;menu} #### Fonction ad >> fonction pause >> menu
+        2 {ad;pause;menu}
         3 {dns;pause;menu}
         4 {zone_inverse;pause;menu}
         5 {dhcp;pause;menu}
@@ -229,15 +229,15 @@ function dfs_main_server {
     New-Item -Path "C:\partage" -itemType Directory
     New-SmbShare -Name "partage" -Path "C:\partage"
 
-    Enter-PSSession $ad2                                                                    #### Connexion powershell sur ad2
+    #Enter-PSSession $ad2                                                                    #### Connexion powershell sur ad2
 
-    Get-WindowsFeature FS-DFS* | Install-WindowsFeature -IncludeManagementTools
-    Install-WindowsFeature FS-BranchCache -IncludeManagementTools
+    #Get-WindowsFeature FS-DFS* | Install-WindowsFeature -IncludeManagementTools
+    #Install-WindowsFeature FS-BranchCache -IncludeManagementTools
     
-    New-Item -Path "C:\partage" -itemType Directory
-    New-SmbShare -Name "partage" -Path "C:\partage"
+    N#ew-Item -Path "C:\partage" -itemType Directory
+    #New-SmbShare -Name "partage" -Path "C:\partage"
 
-    Exit-PSSession
+    #Exit-PSSession
 
     New-DfsnRoot -Path "\\$domain\partage" -Type DomainV2 -TargetPath "\\$ad1\partage"      #### Création espace de nom sur serveur ad1 et ad2
     New-DfsnRoot -Path "\\$domain\partage" -Type DomainV2 -TargetPath "\\$ad2\partage"
