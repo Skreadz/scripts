@@ -14,6 +14,8 @@ function menu () #### Fonction Menu
     Write-Host "2 : Création groupe"
     Write-Host "3 : Création dossier partages"
     Write-Host "4 : Création des utilisateurs"
+    Write-Host "5 : ACL dossier PERSO"
+    Write-Host "6 : ACL dossier SERVICES"
     Write-Host "Q : Quitter"
     $choix = Read-Host "votre choix "
     switch ($choix) {
@@ -21,6 +23,8 @@ function menu () #### Fonction Menu
         2 {groupe;pause;menu}
         3 {dossier;pause;menu}
         4 {user;pause;menu}
+        5 {acl_user;pause;menu}
+        6 {acl_services;pause;menu}
         Q {exit}
         Default {menu}   
 }
@@ -96,12 +100,54 @@ function user {         #### Fonction pour créer utilisateur
     $csv = import-csv -path "C:\Users\Administrateur\Documents\user.csv" -Delimiter ";" -Encoding UTF8
 
     foreach ($line in $csv) {
+    $sam = $line.prenom.toLower()+"."+$line.nom.toLower()
+    $upn = $sam+"@"+$env:USERDNSDOMAIN.toLower()
+    $mail = $upn
     $group = $line.ou.toUpper()
     $cheminuser = "OU="+$group+",OU=UTILISATEURS,"+$cheminouprincipale
-    #$prenom = $line.prenom.toLower()
+    $prenom = $line.prenom.toLower()
     $nom = $line.nom.toLower()
 
-    New-ADUser -Name $nom -Enable $true -ChangePasswordAtLogon $true -Path $cheminuser -Verbose -AccountPassword (convertto-securestring "Azerty1+" -asplaintext -force)
+    New-ADUser -Name $nom -GivenName $prenom -Surname $nom -SamAccountName $sam -UserPrincipalName $upn -EmailAddress $mail -Enable $true -ChangePasswordAtLogon $true -Path $cheminuser -Verbose -AccountPassword (convertto-securestring "Azerty1+" -asplaintext -force)
+    }
+}
+
+function acl_user {
+
+    $csv = import-csv -path "C:\Users\Administrateur\Documents\user.csv" -Delimiter ";" -Encoding UTF8
+    foreach ($line in $csv) {
+        $sam = $line.prenom.toLower()+"."+$line.nom.toLower()
+        $service = "\\SRV-SF1\partage\PERSO\"+$sam
+        $group = $line.group.toUpper()      #### Récupère la section group du CSV en plus de l'écrire en majuscules
+        $GG="GG_"+$group
+
+        Add-ADGroupMember -Identity $GG -Members $sam
+
+        $acl = Get-Acl -Path $service
+        $rule = New-Object Security.AccessControl.FileSystemAccessRule("$sam", "Modify" ,"ContainerInherit, ObjectInherit","None","Allow")
+        $acl.SetAccessRuleProtection($true,$true)
+        $acl.addAccessRule($rule) #ajout de la régle
+
+        $acl | Set-Acl #Appliquer les droits
+        }
+}
+
+function acl_services {
+
+    $csv = import-csv -path "C:\Users\Administrateur\Documents\user.csv" -Delimiter ";" -Encoding UTF8
+    foreach ($line in $csv) {
+
+        $ou = $line.ou.toUpper() 
+        $service = "\\SRV-SF1\partage\SERVICES\"+$ou
+        $group = $line.group.toUpper()                  #### Récupère la section group du CSV en plus de l'écrire en majuscules
+        $GDL="GDL_"+$group+"_RW"
+
+        $acl = Get-Acl -Path $service
+        $rule = New-Object Security.AccessControl.FileSystemAccessRule("$GDL", "Modify" ,"ContainerInherit, ObjectInherit","None","Allow")
+        $acl.SetAccessRuleProtection($true,$true)
+        $acl.addAccessRule($rule) #ajout de la régle
+
+        $acl | Set-Acl #Appliquer les droits
     }
 }
 menu
