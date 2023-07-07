@@ -43,7 +43,6 @@ function ad {
     $disklogs = Read-Host "Selectionner un disque pour les logs"
     $domain = Read-Host "Saisir le nom de domaine"
     $netbios = Read-Host "Saisir le nom NETBIOS"
-    $name = Read-Host "Saisir nom serveur"
 
     Initialize-Disk -Number $diskbdd                                                        #### DISK SYSVOL LOGS DATA
     New-Partition -DiskNumber $diskbdd -DriveLetter B -Size 4GB
@@ -57,10 +56,7 @@ function ad {
     New-Partition -DiskNumber $disklogs -DriveLetter L -Size 4GB
     Format-Volume -DriveLetter L -FileSystem NTFS -Confirm:$false -NewFileSystemLabel LOGS
 
-    Rename-Computer -NewName $name
-
     Add-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools -IncludeAllSubFeature #### AJOUT ROLE AD
-
 
     Import-Module ADDSDeployment #### PROMOUVOIR SERVEUR EN CONTROLEUR DE DOMAINE + CREATION FORET
     Install-ADDSForest `
@@ -210,10 +206,12 @@ function server_fichier {
         Add-Computer -DomainName $domain  -Credential (Get-Credential $admindomain) -Restart
     }
     function folder {           #### Fonction création smbshare partage$ + création 3 dossier COMMUN,PERSO,SERVICES
-        
-        New-Item -Path C:\partage -itemType Directory
-        New-SmbShare -Name "partage$" -Path "C:\partage"
-        New-Item -Path C:\partage\COMMUN,C:\partage\PERSO,C:\partage\SERVICES -ItemType Directory
+        $lecteur = Read-Host "Saisir lettre disque où créer les dossier de partages"
+        New-Item -Path $lecteur":\partage" -itemType Directory
+        New-SmbShare -Name "partage" -Path $lecteur":\partage"
+        New-Item -Path $lecteur":\partage\COMMUN" -ItemType Directory
+        New-Item -Path $lecteur":\partage\PERSO" -ItemType Directory
+        New-Item -Path $lecteur":\partage\SERVICES" -ItemType Directory
     }
 
 function dfs_main_server {
@@ -242,12 +240,12 @@ function dfs_main_server {
     New-DfsnRoot -Path "\\$domain\partage" -Type DomainV2 -TargetPath "\\$ad1\partage"      #### Création espace de nom sur serveur ad1 et ad2
     New-DfsnRoot -Path "\\$domain\partage" -Type DomainV2 -TargetPath "\\$ad2\partage"
 
-    New-DfsnFolder -Path "\\$domain\partage\COMMUN" -TargetPath "\\$sf1\partage$\COMMUN" -EnableTargetFailback $true -Description 'Folder for legacy software.'         #### ajout des dossier COMMUN,PERSO,SERVICES sur 2 serveurs de fichiers sf1 et sf2
-    New-DfsnFolderTarget -Path "\\$domain\partage\COMMUN" -TargetPath "\\$sf2\partage$\COMMUN"
-    New-DfsnFolder -Path "\\$domain\partage\PERSO" -TargetPath "\\$sf1\partage$\PERSO" -EnableTargetFailback $true -Description 'Folder for legacy software.'
-    New-DfsnFolderTarget -Path "\\$domain\partage\PERSO" -TargetPath "\\$sf2\partage$\PERSO"
-    New-DfsnFolder -Path "\\$domain\partage\SERVICES" -TargetPath "\\$sf1\partage$\SERVICES" -EnableTargetFailback $true -Description 'Folder for legacy software.'
-    New-DfsnFolderTarget -Path "\$domain\partage\SERVICES" -TargetPath "\\$sf2\partage$\SERVICES"
+    New-DfsnFolder -Path "\\$domain\partage\COMMUN" -TargetPath "\\$sf1\partage\COMMUN" -EnableTargetFailback $true -Description 'Folder for legacy software.'         #### ajout des dossier COMMUN,PERSO,SERVICES sur 2 serveurs de fichiers sf1 et sf2
+    New-DfsnFolderTarget -Path "\\$domain\partage\COMMUN" -TargetPath "\\$sf2\partage\COMMUN"
+    New-DfsnFolder -Path "\\$domain\partage\PERSO" -TargetPath "\\$sf1\partage\PERSO" -EnableTargetFailback $true -Description 'Folder for legacy software.'
+    New-DfsnFolderTarget -Path "\\$domain\partage\PERSO" -TargetPath "\\$sf2\partage\PERSO"
+    New-DfsnFolder -Path "\\$domain\partage\SERVICES" -TargetPath "\\$sf1\partage\SERVICES" -EnableTargetFailback $true -Description 'Folder for legacy software.'
+    New-DfsnFolderTarget -Path "\$domain\partage\SERVICES" -TargetPath "\\$sf2\partage\SERVICES"
 }
 
 function replication {          #### Fonction réplication de fichiers

@@ -29,6 +29,7 @@ Suivre l'ordre pour l'installation d'une infra Microsoft.
 * Menu6 = Ajout serveur AD dans le domaine existant + Initialisation des 3 disques 4GB sysvol,logs,bdd + nouveau smb share c:\partage
 
 === Préparation à faire sur les 2 serveurs de fichiers
+* Menu1 = Configuration IP + Rename serveur 
 * Menu7 to Menu1 = Installe rôle services de fichiers + restart
 * Menu7 to Menu2 = Création du dossier partagé C:\partage + COMMUN,PERSO,SERVICES
 
