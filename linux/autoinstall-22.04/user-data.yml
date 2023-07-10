@@ -108,12 +108,10 @@ autoinstall:
   package_upgrade: true
   late-commands:
     - curtin in-target --target=/target -- apt-get install -y ansible wget git
-    #- curtin in-target --target=/target -- git clone ssh://git@gitlab-it-ssh.sqli.com:10022/oneit/ubuntu-22.04-cloud-init-autoinstall.git
-    #- wget -O /tmp/custom-questions.sh http://10.237.175.6/SCRIPTS/custom-questions.sh
     #- chmod +x /tmp/custom-questions.sh
     #- /bin/sh /tmp/custom-questions.sh
     #- /bin/cp /tmp/*.value /target/tmp
-    - curtin in-target --target=/target -- wget -O /root/post-install.sh http://10.237.175.6/SCRIPTS/post-install.sh
+    - curtin in-target --target=/target -- wget -O /root/post-install.sh http://ip_serveur/SCRIPTS/post-install.sh
     - curtin in-target --target=/target -- chmod +x /root/post-install.sh
     #- curtin in-target --target=/target -- /bin/bash /root/post-install-desktop-ubuntu.sh
     #- curtin in-target --target=/target -- ansible-playbook --connection=local -i 127.0.0.1, -e agency=bordeaux -e username=adminsqli /root/ubuntu-22.04-cloud-init-autoinstall/install_all_softs.yml
