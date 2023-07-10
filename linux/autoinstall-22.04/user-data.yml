@@ -1,0 +1,119 @@
+#cloud-config
+autoinstall:
+  version: 1
+  refresh-installer:  # start with an up-to-date installer
+  update: yes
+  #interactive-sections:  # Install groups listed here will wait for user input
+  # - storage
+  storage:
+    grub:
+      update_nvram: true
+      remove_duplicate_entries: true
+      probe_additional_os: false
+      reorder_uefi: false
+    swap:
+      filename: swap.img
+      maxsize: 8GB
+    config:
+    # Disks
+      - id: disk0
+        type: disk
+        ptable: gpt
+        wipe: superblock
+        grub_device: false
+        match:
+          ssd: yes
+          size: largest
+    # Partitions
+      - id: bios
+        type: partition
+        device: disk0
+        size: 1MB
+        flag: bios_grub
+      - id: esp
+        type: partition
+        device: disk0
+        grub_device: true
+        size: 512MB
+        flag: boot
+      - id: boot
+        type: partition
+        device: disk0
+        size: 1GB
+   # LVM Physical Volumes and DM-CRYPT disk encryption
+      - id: pv
+        type: partition
+        device: disk0
+        size: -1
+      - id: client_encrypted
+        type: dm_crypt
+        preserve: false
+        key: 'passphrase luks'
+        volume: pv
+   # LVM Volume Groups and Partitions
+      - id: volumegroup
+        name: ubuntu-volumegroup
+        type: lvm_volgroup
+        devices: [client_encrypted]
+        preserve: false
+      - id: lv_root
+        name: root
+        volgroup: volumegroup
+        size: 100%
+        type: lvm_partition
+   # Filesystems
+      - id: esp_filesystem
+        type: format
+        volume: esp
+        fstype: fat32
+        label: EFI
+      - id: boot_filesystem
+        type: format
+        volume: boot
+        fstype: ext4
+      - id: root_filesystem
+        type: format
+        fstype: ext4
+        volume: lv_root
+   # Filesystem Mountpoints
+      - id: esp_mount
+        type: mount
+        device: esp_filesystem
+        path: /boot/efi
+      - id: boot_mount
+        type: mount
+        device: boot_filesystem
+        path: /boot
+      - id: root_mount
+        type: mount
+        device: root_filesystem
+        path: /
+  locale: fr_FR.UTF-8
+  keyboard:
+    layout: fr
+  identity:  # This is section you may want to add to interactive-sections  (user name and password are ubuntu here)
+    hostname: test
+    password: mdp chiffré
+    username: test
+  apt:
+    sources:
+      ignored1:  # This is here to get the yaml formatting right when adding a ppa
+        source: ppa:graphics-drivers/ppa
+  packages:
+    - build-essential
+    - ubuntu-desktop-minimal
+    - network-manager
+    - dkms
+  package_update: true
+  package_upgrade: true
+  late-commands:
+    - curtin in-target --target=/target -- apt-get install -y ansible wget git
+    #- curtin in-target --target=/target -- git clone ssh://git@gitlab-it-ssh.sqli.com:10022/oneit/ubuntu-22.04-cloud-init-autoinstall.git
+    #- wget -O /tmp/custom-questions.sh http://10.237.175.6/SCRIPTS/custom-questions.sh
+    #- chmod +x /tmp/custom-questions.sh
+    #- /bin/sh /tmp/custom-questions.sh
+    #- /bin/cp /tmp/*.value /target/tmp
+    - curtin in-target --target=/target -- wget -O /root/post-install.sh http://10.237.175.6/SCRIPTS/post-install.sh
+    - curtin in-target --target=/target -- chmod +x /root/post-install.sh
+    #- curtin in-target --target=/target -- /bin/bash /root/post-install-desktop-ubuntu.sh
+    #- curtin in-target --target=/target -- ansible-playbook --connection=local -i 127.0.0.1, -e agency=bordeaux -e username=adminsqli /root/ubuntu-22.04-cloud-init-autoinstall/install_all_softs.yml
