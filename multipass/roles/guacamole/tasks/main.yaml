@@ -31,7 +31,7 @@
   ansible.builtin.unarchive:
    src: /tmp/apache-tomcat-9.0.78.tar.gz
    dest: /tmp/apache-tomcat-9.0.78
-   remote_src: true # // option pour cibler l'hôte distant
+   #remote_src: true # // option pour cibler l'hôte distant
 
 - name: Rename Directory Tomcat
   command: mv /opt/tomcat/apache-tomcat-*/ /opt/tomcat/tomcatapp
