@@ -1,0 +1,11 @@
+multipass launch -c 4 -m 8G -d 20G -n ubuntu-server1 20.04 >>> Créer vms ubuntu server 20.04 avec Hyper-V avec 4 coeurs, 8GB ram, disk 20GB avec le nom ubuntu-server1
+
+multipass delete --purge name_vms
+
+multipass shell name_vms >>> Connexion à la vms
+
+multipass find >>> Chercher le nom des instances
+
+multipass stop name_vms
+
+multipass launch -n my-test-vm --cloud-init cloud-config.yaml >>> lancer avec user-data file

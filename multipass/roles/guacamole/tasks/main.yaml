@@ -1,0 +1,104 @@
+- name: Add repo ppa:remmina-ppa-team/remmina-next-daily
+  shell:
+          "add-apt-repository ppa:remmina-ppa-team/remmina-next-daily"
+
+- name: Update apt-get repo and cache
+  apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
+- name: Upgrade all apt packages
+  apt: upgrade=dist force_apt_get=yes
+
+- name: Install dependencies Guac
+  shell:
+          "apt install -y gcc vim curl wget g++ libcairo2-dev libjpeg-turbo8-dev libpng-dev libtool-bin libossp-uuid-dev libavcodec-dev  libavformat-dev libavutil-dev libswscale-dev build-essential libpango1.0-dev libssh2-1-dev libvncserver-dev libtelnet-dev libpulse-dev libssl-dev libvorbis-dev libwebp-dev libwebsockets-dev ubuntu-desktop-minimal freerdp2-dev freerdp2-x11 xrdp -y"
+
+- name: Install jdk + wget
+  apt:
+    name: ['openjdk-11-jdk', 'wget']
+    state: present
+
+- name: Add User Tomcat
+  shell:
+          "useradd -m -U -d /opt/tomcat -s /bin/false tomcat"
+
+- name: "Download Apache Tomcat"
+  get_url:
+    url: https://downloads.apache.org/tomcat/tomcat-9/v9.0.71/bin/apache-tomcat-9.0.71.tar.gz
+    dest: "/tmp/apache-tomcat-9.0.71.tar.gz"
+
+- name: Extract Apache Tomcat
+  ansible.builtin.unarchive:
+   src: /tmp/apache-tomcat-9.0.71.tar.gz
+   dest: /tmp/apache-tomcat-9.0.71
+   remote_src: true # // option pour cibler l'hôte distant
+
+- name: Rename Directory Tomcat
+  command: mv /opt/tomcat/apache-tomcat-*/ /opt/tomcat/tomcatapp
+
+- name: Recursively change ownership of a directory
+  ansible.builtin.file:
+    path: /opt/tomcat
+    state: directory
+    recurse: yes
+    owner: tomcat
+    group: tomcat
+
+- name: .sh executable
+  shell:
+        find /opt/tomcat/tomcatapp/bin/ -type f -iname "*.sh" -exec chmod +x {} \;
+
+- name: Add the Tomcat systemd file.
+  copy:
+    dest: "/etc/systemd/system/tomcat.service"
+    content: |
+        [Unit]
+        Description=Tomcat 9 servlet container
+        After=network.target
+
+        [Service]
+        Type=forking
+
+        User=tomcat
+        Group=tomcat
+
+        Environment="JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64"
+        Environment="JAVA_OPTS=-Djava.security.egd=file:///dev/urandom -Djava.awt.headless=true"
+
+        Environment="CATALINA_BASE=/opt/tomcat/tomcatapp"
+        Environment="CATALINA_HOME=/opt/tomcat/tomcatapp"
+        Environment="CATALINA_PID=/opt/tomcat/tomcatapp/temp/tomcat.pid"
+        Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
+
+        ExecStart=/opt/tomcat/tomcatapp/bin/startup.sh
+        ExecStop=/opt/tomcat/tomcatapp/bin/shutdown.sh
+
+        [Install]
+        WantedBy=multi-user.target
+
+- name: Restart daemon-reload
+  shell:
+        systemctl daemon-reload
+
+- name: Enable Tomcat service
+  ansible.builtin.systemd:
+    name: tomcat
+    enabled: true
+
+- name: "Download Guac"
+  get_url:
+    url: https://apache.org/dyn/closer.lua/guacamole/1.4.0/source/guacamole-server-1.4.0.tar.gz
+    dest: "/tmp/guacamole-server-1.4.0.tar.gz"
+
+- name: Extract Apache Tomcat
+  ansible.builtin.unarchive:
+   src: /tmp/guacamole-server-1.4.0.tar.gz
+   dest: /tmp/guacamole-server-1.4.0
+   remote_src: true # // option pour cibler l'hôte distant
+
+- name: Script Guac
+  shell:
+        cd /tmp/guacamole-server-1.4.0 && ./configure --with-init-dir=/etc/init.d
+
+- name: Restart daemon-reload
+  shell:
+        cd /tmp/guacamole-server-1.4.0 && make && make install
