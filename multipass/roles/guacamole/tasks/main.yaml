@@ -1,3 +1,4 @@
+---
 - name: Add repo ppa:remmina-ppa-team/remmina-next-daily
   shell:
           "add-apt-repository ppa:remmina-ppa-team/remmina-next-daily"
@@ -23,13 +24,13 @@
 
 - name: "Download Apache Tomcat"
   get_url:
-    url: https://downloads.apache.org/tomcat/tomcat-9/v9.0.71/bin/apache-tomcat-9.0.71.tar.gz
-    dest: "/tmp/apache-tomcat-9.0.71.tar.gz"
+    url: https://downloads.apache.org/tomcat/tomcat-9/v9.0.78/bin/apache-tomcat-9.0.78.tar.gz
+    dest: "/tmp/apache-tomcat-9.0.78.tar.gz"
 
 - name: Extract Apache Tomcat
   ansible.builtin.unarchive:
-   src: /tmp/apache-tomcat-9.0.71.tar.gz
-   dest: /tmp/apache-tomcat-9.0.71
+   src: /tmp/apache-tomcat-9.0.78.tar.gz
+   dest: /tmp/apache-tomcat-9.0.78
    remote_src: true # // option pour cibler l'hôte distant
 
 - name: Rename Directory Tomcat
@@ -99,6 +100,51 @@
   shell:
         cd /tmp/guacamole-server-1.4.0 && ./configure --with-init-dir=/etc/init.d
 
-- name: Restart daemon-reload
+- name: Make Install
   shell:
         cd /tmp/guacamole-server-1.4.0 && make && make install
+
+- name: Creates directory
+  file:
+    path: /etc/guacamole
+    state: directory
+
+- name: Add the guacd.conf file
+  copy:
+    dest: "/etc/guacamole/guacd.conf"
+    content: |
+        [daemon]
+        pid_file = /var/run/guacd.pid
+        #log_level = debug
+
+        [server]
+        #bind_host = localhost
+        bind_host = 127.0.0.1
+        bind_port = 4822
+
+        #[ssl]
+        #server_certificate = /etc/ssl/certs/guacd.crt
+        #server_key = /etc/ssl/private/guacd.key
+
+- name: Restart daemon-reload
+  shell:
+        systemctl daemon-reload
+
+- name: Enable Apache guac
+  ansible.builtin.systemd:
+    name: guacd
+    state: started
+    enabled: true
+
+- name: Download Guac Web Application
+  get_url:
+    url: https://archive.apache.org/dist/guacamole/1.4.0/binary/guacamole-1.4.0.war
+    dest: "/etc/guacamole/guacamole.war"
+
+- name: Création d'un lien symbolique
+  ansible.builtin.file:
+    src: "/etc/guacamole/guacamole.war"
+    dest: /opt/tomcat/tomcatapp/webapps
+    owner: tomcat
+    group: tomcat
+    state: link
