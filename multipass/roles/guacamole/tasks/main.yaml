@@ -148,3 +148,65 @@
     owner: tomcat
     group: tomcat
     state: link
+
+- name: "/etc/default/tomcat"
+  lineinfile:
+    dest: /etc/default/tomcat
+    insertafter: EOF
+    line: 'GUACAMOLE_HOME=/etc/guacamole'
+
+- name: "/etc/profile"
+  lineinfile:
+    dest: /etc/profile
+    insertafter: EOF
+    line: 'export GUACAMOLE_HOME=/etc/guacamole'
+
+- name: Add /etc/guacamole/guacamole.properties
+  copy:
+    dest: "/etc/guacamole/guacamole.properties"
+    content: |
+        guacd-hostname: localhost
+        guacd-port:  4822
+        user-mapping:  /etc/guacamole/user-mapping.xml
+        auth-provider:  net.sourceforge.guacamole.net.basic.BasicFileAuthenticationProvider
+
+- name: Création d'un lien symbolique
+  ansible.builtin.file:
+    src: "/opt/tomcat/tomcatapp"
+    dest: /etc/guacamole
+    owner: tomcat
+    group: tomcat
+    state: link
+
+- name: Add /etc/guacamole/user-mapping.xml
+  copy:
+    dest: "/etc/guacamole/user-mapping.xml"
+    content: |
+        <user-mapping>
+            <authorize
+                    username="layerstack"
+                    password="c5bb09e5d3a11808cd43ae554eee9c85"
+                    encoding="md5">
+              <connection name="LayerStack Ubuntu SSH">
+                  <protocol>ssh</protocol>
+                  <param name="hostname">123.123.123.123</param>
+                  <param name="port">22</param>
+                  <param name="username">root</param>
+              </connection>
+              <connection name="LayerStack Ubuntu RDP">
+                  <protocol>rdp</protocol>
+                  <param name="hostname">123.123.123.123</param>
+                  <param name="port">3389</param>
+              </connection>
+            </authorize>
+        </user-mapping>
+
+- name: Restart Tomcat service
+  ansible.builtin.systemd:
+    name: tomcat
+    state: reloaded
+
+- name: Restart guacd service
+  ansible.builtin.systemd:
+    name: guacd
+    state: reloaded
