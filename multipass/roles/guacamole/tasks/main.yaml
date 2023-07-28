@@ -30,11 +30,13 @@
 - name: Extract Apache Tomcat
   ansible.builtin.unarchive:
    src: /tmp/apache-tomcat-9.0.78.tar.gz
-   dest: /tmp/apache-tomcat-9.0.78
+   dest: /opt/tomcat
    #remote_src: true # // option pour cibler l'hôte distant
 
-- name: Rename Directory Tomcat
-  command: mv /opt/tomcat/apache-tomcat-*/ /opt/tomcat/tomcatapp
+- name: Copy file with new name
+  ansible.builtin.copy:
+    src: "/opt/tomcat/apache-tomcat-9.0.78"
+    dest: "/opt/tomcat/tomcatapp"
 
 - name: Recursively change ownership of a directory
   ansible.builtin.file:

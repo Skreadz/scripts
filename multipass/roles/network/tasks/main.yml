@@ -1,0 +1,24 @@
+--- 
+- name: Download network manager
+  ansible.builtin.apt:
+    name: ['network-manager']
+
+- name: Start service network manager
+  service:
+         name: NetworkManager
+         state: started
+         enabled: true
+
+- name: Config ip 
+  vars:
+      target_mac: 52:54:00:03:93:03
+      network_connection:
+        - name: static-network
+          type: ethernet
+          mac: "{{ targer_mac }}"
+          state: up
+          ip :
+            dhcp: no
+            address:
+              - 192.168.1.1
+

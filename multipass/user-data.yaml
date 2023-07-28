@@ -21,4 +21,17 @@
   locale: fr_FR.UTF-8
   keyboard:
     layout: fr
+
+  network:
+  version: 2
+  ethernets:
+    # opaque ID for physical interfaces, only referred to by other stanzas
+    eth0:
+      dhcp4: false
+      addresses:
+        - 192.168.1.0/24
+      gateway4: 192.168.1.254
+      nameservers:
+        search: [zouz.local]
+        addresses: [8.8.8.8]
   
