@@ -1,24 +1,20 @@
 --- 
-- name: Download network manager
-  ansible.builtin.apt:
-    name: ['network-manager']
+- name: Add config ip
+  copy:
+    dest: "/etc/netplan/50-cloud-init.yaml"
+    content: |
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+              eth0:
+                dhcp4: no
+                addresses:
+                  - 192.168.1.1/24
+                gateway4: 192.168.1.254
+                nameservers:
+                    addresses: [8.8.8.8, 1.1.1.1]
 
-- name: Start service network manager
-  service:
-         name: NetworkManager
-         state: started
-         enabled: true
-
-- name: Config ip 
-  vars:
-      target_mac: 52:54:00:03:93:03
-      network_connection:
-        - name: static-network
-          type: ethernet
-          mac: "{{ targer_mac }}"
-          state: up
-          ip :
-            dhcp: no
-            address:
-              - 192.168.1.1
-
+- name: Apply netplan
+  command: sudo netplan apply
+  ignore_errors: true
