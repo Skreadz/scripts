@@ -19,7 +19,7 @@ Suivre l'ordre pour l'installation d'un AD.
 
 === Préparation CSV
 
-* Le fichier csv doit être un fichier.csv en encodate UTF-8
+* Le fichier csv doit être un fichier.csv en encodage UTF-8
 * Avec un sommaire de ce type séparé par des ; + 
 
 image:images/csv.png[center]
