@@ -1,4 +1,7 @@
 sudo ip addr add 190.1.1.173 dev eth0 ### add ip on network card
 ip -c add
 
+route -n ### list route
 
+sudo ip addr add x.x.x.x dev *interface_name*
+ip link set dev *interface_name* up
