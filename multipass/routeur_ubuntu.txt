@@ -1,0 +1,4 @@
+sudo ip addr add 190.1.1.173 dev eth0 ### add ip on network card
+ip -c add
+
+
