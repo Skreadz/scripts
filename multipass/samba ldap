@@ -1,0 +1,25 @@
+sudo apt install samba cifs-utils smbclient
+
+/etc/samba/smb.conf >> 
+   [global]
+        workgroup = DOMAIN
+        server string = Samba Server Version %v
+
+        security = ADS
+        realm = DOMAIN.COM
+
+        encrypt passwords = yes
+        log level = 3
+        log file = /var/log/samba/%U.log
+        max log size = 50
+        template shell = /bin/bash
+
+[homes]
+        comment = Home Directories
+        browseable = no
+        writable = yes
+        force create mode = 0660
+        force directory mode = 0770
+
+
+   sudo systemctl restart smbd.service nmbd.service
