@@ -1,0 +1,13 @@
+sudo apt-get install realmd samba-common-bin samba-libs samba-dsdb-modules samba-vfs-modules libnss-winbind libpam-winbind
+
+sudo realm discover dylan.local
+
+sudo realm join --user=administrateur dylan.local
+
+realm  list
+
+sudo pam-auth-update >> create home at login
+
+sudo systemctl restart sssd
+
+sudo realm permit adminjp@dylan.local

@@ -1,0 +1,113 @@
+https://kifarunix.com/install-apache-guacamole-as-docker-container-on-ubuntu/
+
+docker run --name guacamoledb -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=guacdb -d mysql/mysql-server
+
+docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --mysql > /opt/guacamole/mysql/01-initdb.sql
+
+docker cp /opt/guacamole/mysql/01-initdb.sql guacamoledb:/docker-entrypoint-initdb.d
+
+docker exec -it guacamoledb bash
+
+cd /docker-entrypoint-initdb.d/
+
+mysql -u root -p >> password
+
+use guacdb;
+
+source 01-initdb.sql;
+
+create user guacadmin@'%' identified by 'password';
+
+grant SELECT,UPDATE,INSERT,DELETE on guacdb.* to guacadmin@'%';
+
+flush privileges;
+
+docker run --name guacamole-server -d guacamole/guacd
+
+docker run --name guacamole-client --link guacamole-server:guacd --link guacamoledb:mysql -e MYSQL_DATABASE=guacdb -e MYSQL_USER=guacadmin -e MYSQL_PASSWORD=password -d -p 80:8080 guacamole/guacamole
+
+#### GUAC NATIF ####
+
+https://downloads.apache.org/guacamole/1.5.3/source/guacamole-server-1.5.3.tar.gz
+
+https://www.linode.com/docs/guides/installing-apache-guacamole-on-ubuntu-and-debian/
+
+sudo apt-get install build-essential libcairo2-dev libjpeg62-turbo-dev libpng-dev libtool-bin uuid-dev libossp-uuid-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev freerdp2-dev libpango1.0-dev libssh2-1-dev libtelnet-dev libvncserver-dev libwebsockets-dev libpulse-dev libssl-dev libvorbis-dev libwebp-dev
+
+wget https://downloads.apache.org/guacamole/1.5.2/source/guacamole-server-1.5.2.tar.gz
+
+tar -xzf guacamole-server-1.5.2.tar.gz
+
+sudo ./configure --with-init-dir=/etc/init.d
+
+sudo make
+
+sudo make install
+
+sudo ldconfig
+
+sudo systemctl daemon-reload
+sudo systemctl start guacd
+sudo systemctl enable guacd
+
+sudo mkdir -p /etc/guacamole/{extensions,lib}
+
+sudo apt-get install tomcat9 tomcat9-admin tomcat9-common tomcat9-user
+
+wget https://downloads.apache.org/guacamole/1.5.2/binary/guacamole-1.5.2.war    
+
+sudo mv guacamole-1.5.2.war /var/lib/tomcat9/webapps/guacamole.war
+
+sudo apt-get install mariadb-server
+
+sudo mysql_secure_installation
+
+mysql -u root -p
+
+CREATE DATABASE guacadb;
+CREATE USER 'guaca_nachos'@'localhost' IDENTIFIED BY 'P@ssword!';
+GRANT SELECT,INSERT,UPDATE,DELETE ON guacadb.* TO 'guaca_nachos'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+
+wget https://downloads.apache.org/guacamole/1.5.2/binary/guacamole-auth-jdbc-1.5.2.tar.gz
+
+tar -xzf guacamole-auth-jdbc-1.5.2.tar.gz
+
+sudo mv guacamole-auth-jdbc-1.5.2/mysql/guacamole-auth-jdbc-mysql-1.5.2.jar /etc/guacamole/extensions/
+
+wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-j-8.0.33.tar.gz
+
+tar -xzf mysql-connector-j-8.0.33.tar.gz
+
+sudo cp mysql-connector-j-8.0.33/mysql-connector-j-8.0.33.jar /etc/guacamole/lib/
+
+cd guacamole-auth-jdbc-1.5.2/mysql/schema/
+
+cat *.sql | mysql -u root -p guacadb
+
+#### LDAP AUTH ####
+
+wget https://downloads.apache.org/guacamole/1.5.2/binary/guacamole-auth-ldap-1.5.2.tar.gz
+
+tar -xzf guacamole-auth-ldap-1.5.2.tar.gz
+
+sudo mv guacamole-auth-ldap-1.5.2/guacamole-auth-ldap-1.5.2.jar /etc/guacamole/extensions
+
+sudo nano /etc/guacamole/guacamole.properties
+
+### Active Directory
+# Controleur de domaine
+ldap-hostname: M2I-MC-SRV-AD01.dylan.local
+ldap-port: 389
+ldap-encryption-method: none
+
+# Utilisateur pour connexion AD
+ldap-search-bind-dn: admindo@dylan.local
+ldap-search-bind-password: Azerty1+
+
+# Recherche des utilisateurs
+ldap-user-base-dn: OU=INFORMATIQUE,OU=SQLI,DC=dylan,DC=local
+ldap-username-attribute: sAMAccountName
+
+sudo systemctl restart tomcat9

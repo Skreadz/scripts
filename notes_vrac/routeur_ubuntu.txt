@@ -1,0 +1,24 @@
+sudo ip addr add x.x.x.x dev *interface_name* ### add ip on network card
+ip -c add
+
+ip link set dev *interface_name* up ### Up interface
+
+/etc/sysctl.conf >> uncomment net.ipv4.ip_forward=1 pour activer le routage de paquets
+
+iptables -t nat -A POSTROUTING -o *interface_name -j MASQUERADE ### Activation du nat sur l'interface WAN
+
+route -n ### list route
+
+sudo iptables -A PREROUTING -t nat -i <incoming_interface> -p tcp --dport <external_port> -j DNAT --to-destination <destination_ip>:<destination_port>
+sudo iptables -A FORWARD -p tcp -d <destination_ip> --dport <destination_port> -j ACCEPT
+
+
+sudo iptables -t nat -A PREROUTING -p tcp --dport 43218 -j DNAT --to-destination 192.168.151.253:3389 >> add nat rules
+
+sudo iptables -t nat -L -n -v >> list nat rules
+
+sudo iptables -L --line-numbers list rules
+
+sudo iptables -t nat -D PREROUTING 2 >> delete nat rules
+
+sudo sysctl -p >> activer rules

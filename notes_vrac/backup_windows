@@ -1,0 +1,3 @@
+Enable-PSRemoting >> pour permettre la console mmc de voir la config sauvegarde windows
+
+console mmc >> fichier >> add nouveau composant enfichable

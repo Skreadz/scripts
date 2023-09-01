@@ -1,0 +1,173 @@
+lsblk
+
+#### Raid ####
+sudo mdadm --create /dev/md0 --level=5 --raid-devices=4 /dev/sdb /dev/sdc /dev/sdd /dev/sde
+
+sudo mkfs.ext4 /dev/md0
+sudo mkdir /mnt/raid5
+sudo mount /dev/md0 /mnt/raid5
+
+echo '/dev/md0 /mnt/raid5 ext4 defaults 0 0' | sudo tee -a /etc/fstab
+
+cat /proc/mdstat >> check status raid
+
+#### Partition ####
+
+sudo pvcreate /dev/md0
+
+sudo vgcreate vg_raid /dev/md0
+
+
+sudo lvcreate -L 60G -n part1 vg_raid
+sudo lvcreate -L 60G -n part2 vg_raid
+sudo lvcreate -L 60G -n part3 vg_raid
+sudo lvcreate -L 60G -n part4 vg_raid
+sudo lvcreate -L 60G -n part5 vg_raid
+sudo lvcreate -L 60G -n part6 vg_raid
+
+sudo mkfs.ext4 /dev/vg_raid/part1
+sudo mkfs.ext4 /dev/vg_raid/part2
+sudo mkfs.ext4 /dev/vg_raid/part3
+sudo mkfs.ext4 /dev/vg_raid/part4
+sudo mkfs.ext4 /dev/vg_raid/part5
+sudo mkfs.ext4 /dev/vg_raid/part6
+
+sudo mkdir /mnt/raid5/part1
+sudo mkdir /mnt/raid5/part2
+sudo mkdir /mnt/raid5/part3
+sudo mkdir /mnt/raid5/part4
+sudo mkdir /mnt/raid5/part5
+sudo mkdir /mnt/raid5/part6
+
+sudo mount /dev/vg_raid/part1 /mnt/raid5/part1
+sudo mount /dev/vg_raid/part2 /mnt/raid5/part2
+sudo mount /dev/vg_raid/part3 /mnt/raid5/part3
+sudo mount /dev/vg_raid/part4 /mnt/raid5/part4
+sudo mount /dev/vg_raid/part5 /mnt/raid5/part5
+sudo mount /dev/vg_raid/part6 /mnt/raid5/part6
+
+echo '/dev/vg_raid/part1 /mnt/raid5/part1 ext4 defaults 0 0' | sudo tee -a /etc/fstab
+echo '/dev/vg_raid/part2 /mnt/raid5/part2 ext4 defaults 0 0' | sudo tee -a /etc/fstab
+echo '/dev/vg_raid/part3 /mnt/raid5/part3 ext4 defaults 0 0' | sudo tee -a /etc/fstab
+echo '/dev/vg_raid/part4 /mnt/raid5/part4 ext4 defaults 0 0' | sudo tee -a /etc/fstab
+echo '/dev/vg_raid/part5 /mnt/raid5/part5 ext4 defaults 0 0' | sudo tee -a /etc/fstab
+echo '/dev/vg_raid/part6 /mnt/raid5/part6 ext4 defaults 0 0' | sudo tee -a /etc/fstab
+
+#### ISCSI ####
+
+sudo apt install targetcli-fb -y tgt
+
+sudo systemctl stop tgt
+
+block storage for lvm partitions
+
+sudo targetcli (need vg_raid/part* umount)
+
+cd /backstores/block
+
+create block_part1 /dev/vg_raid/part1
+create block_part2 /dev/vg_raid/part2
+create block_part3 /dev/vg_raid/part3
+create block_part4 /dev/vg_raid/part4
+create block_part5 /dev/vg_raid/part5
+create block_part6 /dev/vg_raid/part6
+
+cd iscsi
+
+create iqn.2023-08.local.dylan:part1
+create iqn.2023-08.local.dylan:part2
+create iqn.2023-08.local.dylan:part3
+create iqn.2023-08.local.dylan:part4
+create iqn.2023-08.local.dylan:part5
+create iqn.2023-08.local.dylan:part6
+
+
+/iscsi/iqn.2023-08.local.dylan:part1/tpg1/luns create /backstores/block/block_part1
+/iscsi/iqn.2023-08.local.dylan:part2/tpg1/luns create /backstores/block/block_part2
+/iscsi/iqn.2023-08.local.dylan:part3/tpg1/luns create /backstores/block/block_part3
+/iscsi/iqn.2023-08.local.dylan:part4/tpg1/luns create /backstores/block/block_part4
+/iscsi/iqn.2023-08.local.dylan:part5/tpg1/luns create /backstores/block/block_part5
+/iscsi/iqn.2023-08.local.dylan:part6/tpg1/luns create /backstores/block/block_part6
+
+/iscsi/iqn.2023-08.local.dylan:part1/tpg1/acls/ create iqn.2023-08.local.dylan:ad01
+/iscsi/iqn.2023-08.local.dylan:part2/tpg1/acls/ create iqn.2023-08.local.dylan:ad01
+/iscsi/iqn.2023-08.local.dylan:part3/tpg1/acls/ create iqn.2023-08.local.dylan:ad01
+/iscsi/iqn.2023-08.local.dylan:part4/tpg1/acls/ create iqn.2023-08.local.dylan:ad01
+/iscsi/iqn.2023-08.local.dylan:part5/tpg1/acls/ create iqn.2023-08.local.dylan:ad01
+/iscsi/iqn.2023-08.local.dylan:part6/tpg1/acls/ create iqn.2023-08.local.dylan:ad01
+
+/iscsi/iqn.2023-08.local.dylan:part1/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth userid=admindo
+/iscsi/iqn.2023-08.local.dylan:part1/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth password=Azerty1+
+
+/iscsi/iqn.2023-08.local.dylan:part2/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth userid=admindo
+/iscsi/iqn.2023-08.local.dylan:part2/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth password=Azerty1+
+
+/iscsi/iqn.2023-08.local.dylan:part3/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth userid=admindo
+/iscsi/iqn.2023-08.local.dylan:part3/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth password=Azerty1+
+
+/iscsi/iqn.2023-08.local.dylan:part4/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth userid=admindo
+/iscsi/iqn.2023-08.local.dylan:part4/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth password=Azerty1+
+
+/iscsi/iqn.2023-08.local.dylan:part5/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth userid=admindo
+/iscsi/iqn.2023-08.local.dylan:part5/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth password=Azerty1+
+
+/iscsi/iqn.2023-08.local.dylan:part6/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth userid=admindo
+/iscsi/iqn.2023-08.local.dylan:part6/tpg1/acls/iqn.2023-08.local.dylan:ad01 set auth password=Azerty1+
+
+192.168.151.246:3260
+
+iqn.2004-10.com.ubuntu:01:84de25ddfc37
+
+
+#### TGT ####
+
+sudo vi /etc/tgt/conf.d/fichier.conf
+
+<target iqn.2023-08.local.dylan:part1>
+       backing-store /dev/vg_raid/part1
+       initiator-address "192.168.151.253"
+       incominguser admindo Azerty123456789+
+</target>
+
+<target iqn.2023-08.local.dylan:part2>
+       backing-store /dev/vg_raid/part2
+       initiator-address "192.168.151.253"
+       incominguser admindo Azerty123456789+
+</target>
+
+<target iqn.2023-08.local.dylan:part3>
+       backing-store /dev/vg_raid/part3
+       initiator-address "192.168.151.253"
+       incominguser admindo Azerty123456789+
+</target>
+
+<target iqn.2023-08.local.dylan:part4>
+       backing-store /dev/vg_raid/part4
+       initiator-address "192.168.151.253"
+       incominguser admindo Azerty123456789+
+</target>
+
+<target iqn.2023-08.local.dylan:part5>
+       backing-store /dev/vg_raid/part5
+       initiator-address "192.168.151.253"
+       incominguser admindo Azerty123456789+
+</target>
+
+<target iqn.2023-08.local.dylan:part6>
+       backing-store /dev/vg_raid/part6
+       initiator-address "192.168.151.253"
+       incominguser admindo Azerty123456789+
+</target>
+
+
+#### WINDOWS ISCSI ####
+
+Set-Service msiscsi -startuptype “automatic”
+
+Get-IscsiTarget
+
+New-IscsiTargetPortal -TargetPortalAddress "<IP or FQDN>"
+
+iscsicli listinitiators
+
+cd :\Windows\System32\iscsicpl.exe >> initiator graphique sur core
