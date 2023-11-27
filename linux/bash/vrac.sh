@@ -51,3 +51,7 @@ case $n in
   1) glpi;;
   *) echo "invalid option";;
 esac
+
+### Skip le screen rose (redemerrage auto des daemons après MAJ) ###
+sudo vi /etc/needrestart/needrestart.conf
+#$nrconf{restart} = 'i'; >> $nrconf{restart} = 'a';
