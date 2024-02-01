@@ -1,0 +1,13 @@
+= README
+:toc:
+:sectnums:
+
+Ce repository contient différents scripts ubuntu (en bash).
+
+== Passphrase
+
+unwrap la passphrase d'un dossier chiffré ecryptfs + écriture dans un fichier texte avec login+hostname+date + 
+
+Montage d'un dossier partagé windows + déplacement du ficher +
+
+Ecriture hostname dans le fichier /etc/hostname
