@@ -1,15 +1,13 @@
 version: "3.2"
 
 services:
-#MariaDB Container
+#MySql Container
   mariadb:
     image: mysql:latest
     container_name: mysql_glpi
     hostname: mysql_glpi
     volumes:
       - /mysql_glpi:/var/lib/mysql
-    env_file:
-      - ./mysql.env
     restart: always
 
 #GLPI Container
